@@ -12359,7 +12359,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "TS-A002:TST-A002_0.6MM_BOSS"
 			(at 153.67 173.99 0)
 			(hide yes)
 			(show_name no)
