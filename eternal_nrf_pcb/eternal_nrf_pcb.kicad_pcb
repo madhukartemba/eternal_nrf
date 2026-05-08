@@ -90,7 +90,7 @@
 	(footprint "Inductor_SMD:L_0402_1005Metric_Pad0.77x0.64mm_HandSolder"
 		(layer "F.Cu")
 		(uuid "01222a3d-0657-4554-bf36-5c1961e52e0d")
-		(at 145.8275 115.6)
+		(at 145.8275 115.6 180)
 		(descr "Inductor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC-7351 nominal with elongated pad for handsoldering. (Body size source: http://www.tortai-tech.com/upload/download/2011102023233369053.pdf)")
 		(tags "inductor handsolder")
 		(property "Reference" "L5"
@@ -162,16 +162,6 @@
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
-			(start -0.1002 -0.36)
-			(end 0.1002 -0.36)
-			(stroke
-				(width 0.12)
-				(type solid)
-			)
-			(layer "F.SilkS")
-			(uuid "ae24fb61-5acd-4c7f-8c70-1c54da9310f1")
-		)
-		(fp_line
 			(start -0.1002 0.36)
 			(end 0.1002 0.36)
 			(stroke
@@ -180,6 +170,16 @@
 			)
 			(layer "F.SilkS")
 			(uuid "6f051c22-a6df-427c-8dfe-00d95305ad58")
+		)
+		(fp_line
+			(start -0.1002 -0.36)
+			(end 0.1002 -0.36)
+			(stroke
+				(width 0.12)
+				(type solid)
+			)
+			(layer "F.SilkS")
+			(uuid "ae24fb61-5acd-4c7f-8c70-1c54da9310f1")
 		)
 		(fp_rect
 			(start -1.11 -0.47)
@@ -215,7 +215,7 @@
 			)
 		)
 		(pad "1" smd roundrect
-			(at -0.5725 0)
+			(at -0.5725 0 180)
 			(size 0.765 0.64)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
@@ -225,7 +225,7 @@
 			(uuid "a145675d-3158-4e78-b76b-726097356e61")
 		)
 		(pad "2" smd roundrect
-			(at 0.5725 0)
+			(at 0.5725 0 180)
 			(size 0.765 0.64)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
