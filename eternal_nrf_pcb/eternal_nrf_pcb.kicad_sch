@@ -4457,10 +4457,10 @@
 		(uuid "0631f92f-ed0b-45fa-a94d-a400f00a7990")
 	)
 	(junction
-		(at 245.11 34.29)
+		(at 219.71 26.67)
 		(diameter 0)
 		(color 0 0 0 0)
-		(uuid "0707da25-6b56-4d39-ab91-a6af52748901")
+		(uuid "13d61edd-2a0f-4a85-99b6-636aed7ab3a6")
 	)
 	(junction
 		(at 184.15 26.67)
@@ -4475,16 +4475,16 @@
 		(uuid "1a5ccd63-5ac3-4ce6-8f04-9ec2db03a94a")
 	)
 	(junction
+		(at 245.11 26.67)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "1c345eb6-82a8-4ced-a8b4-e5da7a04d32c")
+	)
+	(junction
 		(at 25.4 158.75)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "26763407-1b9f-4245-bc81-815af9aa2d5b")
-	)
-	(junction
-		(at 48.26 137.16)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "302aef1c-aa5a-4812-803d-62bc45245317")
 	)
 	(junction
 		(at 152.4 53.34)
@@ -4535,6 +4535,18 @@
 		(uuid "6b8fdad7-771b-4a71-ab22-619ab70f58a1")
 	)
 	(junction
+		(at 251.46 26.67)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "6d3a9e60-e84c-496c-995e-ffe29e060c79")
+	)
+	(junction
+		(at 48.26 137.16)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "7126924b-3d86-46ca-8afd-f6fb789f655d")
+	)
+	(junction
 		(at 245.11 66.04)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -4545,6 +4557,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "8cea5b10-3f49-4c12-929c-3735e7fad2d5")
+	)
+	(junction
+		(at 226.06 34.29)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "8eb81d68-3ef4-45e1-b17c-f7f7fe679de5")
 	)
 	(junction
 		(at 158.75 53.34)
@@ -4601,6 +4619,12 @@
 		(uuid "c80fdfdc-6037-4cee-8ed3-4f703cc081d2")
 	)
 	(junction
+		(at 245.11 34.29)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "cbe993e4-ba18-41e4-a97c-070a17fd2968")
+	)
+	(junction
 		(at 111.76 114.3)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -4617,6 +4641,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "d5cf29ae-9bc4-448b-b486-c6a0bd1aca8d")
+	)
+	(junction
+		(at 251.46 34.29)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "d6854093-b67a-43a1-a592-9b3c1f4656ba")
 	)
 	(junction
 		(at 156.21 26.67)
@@ -4637,12 +4667,6 @@
 		(uuid "dbcac3ac-0bc7-4f1b-9736-0011d7fe72aa")
 	)
 	(junction
-		(at 245.11 26.67)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "e541624d-553b-4915-89ba-d72c1711f58d")
-	)
-	(junction
 		(at 138.43 83.82)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -4661,7 +4685,7 @@
 		(uuid "f9651018-2820-4d32-9c4c-71516e7fc030")
 	)
 	(no_connect
-		(at 30.48 134.62)
+		(at 27.94 134.62)
 		(uuid "d39f6ffa-7adf-4575-8dca-87ed9d7c9cf3")
 	)
 	(wire
@@ -4836,7 +4860,7 @@
 	)
 	(wire
 		(pts
-			(xy 45.72 137.16) (xy 48.26 137.16)
+			(xy 46.99 137.16) (xy 48.26 137.16)
 		)
 		(stroke
 			(width 0)
@@ -5006,6 +5030,16 @@
 	)
 	(wire
 		(pts
+			(xy 38.1 137.16) (xy 39.37 137.16)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "37c734f0-8772-4c34-8426-352e379ec095")
+	)
+	(wire
+		(pts
 			(xy 88.9 88.9) (xy 102.87 88.9)
 		)
 		(stroke
@@ -5066,7 +5100,7 @@
 	)
 	(wire
 		(pts
-			(xy 214.63 26.67) (xy 226.06 26.67)
+			(xy 214.63 26.67) (xy 219.71 26.67)
 		)
 		(stroke
 			(width 0)
@@ -5316,6 +5350,16 @@
 	)
 	(wire
 		(pts
+			(xy 251.46 26.67) (xy 261.62 26.67)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6b170325-1b08-407e-b3cb-d46d02b7e0a4")
+	)
+	(wire
+		(pts
 			(xy 25.4 158.75) (xy 35.56 158.75)
 		)
 		(stroke
@@ -5496,13 +5540,13 @@
 	)
 	(wire
 		(pts
-			(xy 30.48 137.16) (xy 38.1 137.16)
+			(xy 27.94 137.16) (xy 30.48 137.16)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "84ee4c69-4b15-4ddd-88d2-e6fde55f1c00")
+		(uuid "84e3d66b-cc28-40a4-ab05-494ce123c26f")
 	)
 	(wire
 		(pts
@@ -5736,7 +5780,7 @@
 	)
 	(wire
 		(pts
-			(xy 245.11 34.29) (xy 252.73 34.29)
+			(xy 245.11 34.29) (xy 251.46 34.29)
 		)
 		(stroke
 			(width 0)
@@ -5866,6 +5910,16 @@
 	)
 	(wire
 		(pts
+			(xy 219.71 34.29) (xy 226.06 34.29)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "bcf640ae-793b-457e-9f01-c2583c5eba1b")
+	)
+	(wire
+		(pts
 			(xy 81.28 88.9) (xy 85.09 88.9)
 		)
 		(stroke
@@ -5893,6 +5947,16 @@
 			(type default)
 		)
 		(uuid "c4e1df4c-a0cf-4518-ac9a-bc1735648f24")
+	)
+	(wire
+		(pts
+			(xy 251.46 34.29) (xy 261.62 34.29)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c5688366-eb70-4d6e-bbc9-160a6e7daf7d")
 	)
 	(wire
 		(pts
@@ -5953,6 +6017,16 @@
 			(type default)
 		)
 		(uuid "cf0621e6-5957-4561-bf4b-dfc40411d0e9")
+	)
+	(wire
+		(pts
+			(xy 219.71 26.67) (xy 226.06 26.67)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d0842aff-bf4d-40bd-811c-3104139945cf")
 	)
 	(wire
 		(pts
@@ -6026,7 +6100,7 @@
 	)
 	(wire
 		(pts
-			(xy 245.11 26.67) (xy 252.73 26.67)
+			(xy 245.11 26.67) (xy 251.46 26.67)
 		)
 		(stroke
 			(width 0)
@@ -6704,7 +6778,7 @@
 				)
 			)
 		)
-		(property "Value" "6.8K"
+		(property "Value" "4.7K"
 			(at 96.52 33.02 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7006,7 +7080,7 @@
 	)
 	(symbol
 		(lib_id "Device:L")
-		(at 41.91 137.16 90)
+		(at 43.18 137.16 90)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -7016,7 +7090,7 @@
 		(dnp no)
 		(uuid "10b63e7f-a5ae-498c-865e-9a7ff06cceb8")
 		(property "Reference" "L2"
-			(at 42.164 131.572 90)
+			(at 43.434 131.572 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -7026,7 +7100,7 @@
 			)
 		)
 		(property "Value" "3.9nH"
-			(at 42.164 134.62 90)
+			(at 43.434 134.62 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -7036,7 +7110,7 @@
 			)
 		)
 		(property "Footprint" "Inductor_SMD:L_0402_1005Metric_Pad0.77x0.64mm_HandSolder"
-			(at 41.91 137.16 0)
+			(at 43.18 137.16 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7047,7 +7121,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 41.91 137.16 0)
+			(at 43.18 137.16 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7058,7 +7132,7 @@
 			)
 		)
 		(property "Description" "Inductor"
-			(at 41.91 137.16 0)
+			(at 43.18 137.16 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7411,7 +7485,7 @@
 	)
 	(symbol
 		(lib_id "Device:Battery_Cell")
-		(at 252.73 31.75 0)
+		(at 261.62 31.75 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -7422,7 +7496,7 @@
 		(fields_autoplaced yes)
 		(uuid "2160be01-f231-4caf-9d58-67f8f2cdf1c9")
 		(property "Reference" "BT1"
-			(at 256.54 28.6384 0)
+			(at 265.43 28.6384 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -7432,8 +7506,8 @@
 				(justify left)
 			)
 		)
-		(property "Value" "Battery_Cell"
-			(at 256.54 31.1784 0)
+		(property "Value" "Battery"
+			(at 265.43 31.1784 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -7444,7 +7518,7 @@
 			)
 		)
 		(property "Footprint" "Battery:BatteryHolder_Seiko_MS621F"
-			(at 252.73 30.226 90)
+			(at 261.62 30.226 90)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7455,7 +7529,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 252.73 30.226 90)
+			(at 261.62 30.226 90)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7466,7 +7540,7 @@
 			)
 		)
 		(property "Description" "Single-cell battery"
-			(at 252.73 31.75 0)
+			(at 261.62 31.75 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7477,7 +7551,7 @@
 			)
 		)
 		(property "Sim.Device" "V"
-			(at 252.73 31.75 0)
+			(at 261.62 31.75 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7488,7 +7562,7 @@
 			)
 		)
 		(property "Sim.Type" "DC"
-			(at 252.73 31.75 0)
+			(at 261.62 31.75 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7499,7 +7573,7 @@
 			)
 		)
 		(property "Sim.Pins" "1=+ 2=-"
-			(at 252.73 31.75 0)
+			(at 261.62 31.75 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7885,7 +7959,7 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" "Connector_PinHeader_2.00mm:PinHeader_1x05_P2.00mm_Vertical"
+		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical"
 			(at 48.26 36.83 0)
 			(hide yes)
 			(show_name no)
@@ -9414,6 +9488,88 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:C")
+		(at 251.46 30.48 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "63159c89-a05d-46ed-80d6-47f10ae6ebee")
+		(property "Reference" "C19"
+			(at 255.27 29.2099 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "100uF"
+			(at 255.27 31.7499 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:C_1210_3225Metric"
+			(at 252.4252 34.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 251.46 30.48 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Unpolarized capacitor"
+			(at 251.46 30.48 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "2"
+			(uuid "ee7dd061-536c-443b-83e8-45a4ef9c433e")
+		)
+		(pin "1"
+			(uuid "b885eb0c-ac47-4e34-a824-9c58bef86ee3")
+		)
+		(instances
+			(project "eternal_nrf_pcb"
+				(path "/debe71e3-c42e-4b38-900f-830a3de6dac1"
+					(reference "C19")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:GND")
 		(at 236.22 55.88 0)
 		(unit 1)
@@ -10929,7 +11085,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "SLR-"
+		(property "Value" "S-"
 			(at 158.75 37.3379 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11069,7 +11225,7 @@
 	)
 	(symbol
 		(lib_id "Device:Antenna_Dipole")
-		(at 25.4 137.16 90)
+		(at 22.86 137.16 90)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -11077,10 +11233,9 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(fields_autoplaced yes)
 		(uuid "c0276265-79d1-4333-a68c-6a2232e9da5e")
 		(property "Reference" "AE1"
-			(at 27.94 127 90)
+			(at 25.4 127 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -11089,8 +11244,8 @@
 				)
 			)
 		)
-		(property "Value" "Antenna_Dipole"
-			(at 27.94 129.54 90)
+		(property "Value" "RFANT3216120A5T"
+			(at 27.686 129.54 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -11100,7 +11255,7 @@
 			)
 		)
 		(property "Footprint" "RF_Antenna:Johanson_2450AT18x100"
-			(at 25.4 137.16 0)
+			(at 22.86 137.16 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11111,7 +11266,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 25.4 137.16 0)
+			(at 22.86 137.16 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11122,7 +11277,7 @@
 			)
 		)
 		(property "Description" "Dipole antenna"
-			(at 25.4 137.16 0)
+			(at 22.86 137.16 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11387,6 +11542,85 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:L")
+		(at 34.29 137.16 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "cc254817-243f-4920-81ba-612c1ec1f677")
+		(property "Reference" "L5"
+			(at 34.544 131.572 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "6.8uH"
+			(at 34.544 134.62 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Inductor_SMD:L_0402_1005Metric_Pad0.77x0.64mm_HandSolder"
+			(at 34.29 137.16 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 34.29 137.16 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Inductor"
+			(at 34.29 137.16 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "2"
+			(uuid "af4b025d-7f6b-45eb-8df7-a3fffe490642")
+		)
+		(pin "1"
+			(uuid "c440bfe7-7d8b-469a-96a5-c23f15819366")
+		)
+		(instances
+			(project "eternal_nrf_pcb"
+				(path "/debe71e3-c42e-4b38-900f-830a3de6dac1"
+					(reference "L5")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Connector:TestPoint")
 		(at 156.21 26.67 180)
 		(unit 1)
@@ -11409,7 +11643,7 @@
 				(justify right)
 			)
 		)
-		(property "Value" "SLR+"
+		(property "Value" "S+"
 			(at 158.75 31.2419 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11730,7 +11964,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "5.76M"
+		(property "Value" "6.34M"
 			(at 140.97 66.0399 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12358,6 +12592,88 @@
 			(project "eternal_nrf_pcb"
 				(path "/debe71e3-c42e-4b38-900f-830a3de6dac1"
 					(reference "#PWR013")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:C")
+		(at 219.71 30.48 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "e609bcaa-515f-4108-a718-176bfdd9762e")
+		(property "Reference" "C18"
+			(at 223.52 29.2099 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "100uF"
+			(at 223.52 31.7499 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:C_1210_3225Metric"
+			(at 220.6752 34.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 219.71 30.48 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Unpolarized capacitor"
+			(at 219.71 30.48 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "2"
+			(uuid "5d5af7da-bc8a-4dea-9d0c-84fabd1bdc3a")
+		)
+		(pin "1"
+			(uuid "d41a4f72-cfc2-4d0b-9d7f-2c6a522b3fa9")
+		)
+		(instances
+			(project "eternal_nrf_pcb"
+				(path "/debe71e3-c42e-4b38-900f-830a3de6dac1"
+					(reference "C18")
 					(unit 1)
 				)
 			)
