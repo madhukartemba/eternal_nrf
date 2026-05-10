@@ -4550,7 +4550,7 @@
 		)
 	)
 	(rectangle
-		(start 185.42 104.14)
+		(start 184.15 104.14)
 		(end 278.765 152.4)
 		(stroke
 			(width 0.762)
@@ -4562,7 +4562,7 @@
 		(uuid "04329219-cddb-4d7b-8fc5-2abcb9726e2f")
 	)
 	(rectangle
-		(start 133.35 156.845)
+		(start 133.35 156.21)
 		(end 173.355 192.405)
 		(stroke
 			(width 0.762)
@@ -4586,7 +4586,7 @@
 		(uuid "7d62bb46-6a9f-49a8-bbd2-e52d8bc819f4")
 	)
 	(rectangle
-		(start 74.93 19.05)
+		(start 74.295 19.05)
 		(end 129.54 64.77)
 		(stroke
 			(width 0.762)
@@ -4836,6 +4836,12 @@
 		(uuid "7126924b-3d86-46ca-8afd-f6fb789f655d")
 	)
 	(junction
+		(at 102.87 96.52)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "768fdc67-5343-4d21-9ab5-2fc99449e536")
+	)
+	(junction
 		(at 245.11 66.04)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -4888,6 +4894,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "ab2f36ee-032c-4139-8dda-b00913c4487c")
+	)
+	(junction
+		(at 102.87 88.9)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "b8767c6d-3918-48dc-8ada-1a8ffd666170")
 	)
 	(junction
 		(at 138.43 60.96)
@@ -5692,6 +5704,16 @@
 			(type default)
 		)
 		(uuid "6b170325-1b08-407e-b3cb-d46d02b7e0a4")
+	)
+	(wire
+		(pts
+			(xy 102.87 96.52) (xy 115.57 96.52)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6b5146ea-369b-432e-bbb6-1f80df1214d4")
 	)
 	(wire
 		(pts
@@ -6652,6 +6674,16 @@
 			(type default)
 		)
 		(uuid "faee1b2e-cb99-4cc3-b2b3-9195e1792891")
+	)
+	(wire
+		(pts
+			(xy 102.87 88.9) (xy 115.57 88.9)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "fb7f642c-1236-4d53-af30-c631b92c40e1")
 	)
 	(global_label "SDA"
 		(shape input)
@@ -8765,6 +8797,88 @@
 			(project "eternal_nrf_pcb"
 				(path "/debe71e3-c42e-4b38-900f-830a3de6dac1"
 					(reference "Q2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:C")
+		(at 115.57 92.71 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "3722ab37-b858-4c5a-9922-df108c700f35")
+		(property "Reference" "C22"
+			(at 119.38 91.4399 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "100nF"
+			(at 119.38 93.9799 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder"
+			(at 116.5352 96.52 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 115.57 92.71 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Unpolarized capacitor"
+			(at 115.57 92.71 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "2"
+			(uuid "e82ab9ca-de07-4803-861d-86556b0a8c75")
+		)
+		(pin "1"
+			(uuid "7057873a-a0bb-4cf3-b37c-600200191bc7")
+		)
+		(instances
+			(project "eternal_nrf_pcb"
+				(path "/debe71e3-c42e-4b38-900f-830a3de6dac1"
+					(reference "C22")
 					(unit 1)
 				)
 			)
