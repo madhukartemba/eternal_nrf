@@ -7429,7 +7429,7 @@
 				)
 			)
 		)
-		(property "Value" "4.7K"
+		(property "Value" "1K"
 			(at 96.52 33.02 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -9744,8 +9744,8 @@
 				(justify right)
 			)
 		)
-		(property "Value" "Crystal"
-			(at 114.808 135.636 90)
+		(property "Value" "X1A0001410003"
+			(at 113.284 135.636 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -10060,7 +10060,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "Crystal_GND24"
+		(property "Value" "S3232000081040"
 			(at 45.72 160.0199 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12461,7 +12461,7 @@
 				)
 			)
 		)
-		(property "Value" "6.8uH"
+		(property "Value" "6.8nH"
 			(at 34.544 134.62 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13102,7 +13102,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "nRF52810-QCxx"
+		(property "Value" "nRF52810-QCAA"
 			(at 87.2333 182.88 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -14005,7 +14005,7 @@
 				)
 			)
 		)
-		(property "Value" "SW_Push"
+		(property "Value" "TSA002A3216A"
 			(at 154.94 172.72 0)
 			(show_name no)
 			(do_not_autoplace no)
