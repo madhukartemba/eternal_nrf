@@ -4550,7 +4550,7 @@
 		)
 	)
 	(rectangle
-		(start 185.42 104.775)
+		(start 185.42 104.14)
 		(end 278.765 152.4)
 		(stroke
 			(width 0.762)
@@ -4574,7 +4574,7 @@
 		(uuid "15004223-ce9a-4f64-b9cb-a28657bbf71f")
 	)
 	(rectangle
-		(start 17.78 19.685)
+		(start 17.78 19.05)
 		(end 70.485 64.77)
 		(stroke
 			(width 0.762)
@@ -4586,7 +4586,7 @@
 		(uuid "7d62bb46-6a9f-49a8-bbd2-e52d8bc819f4")
 	)
 	(rectangle
-		(start 74.93 19.685)
+		(start 74.93 19.05)
 		(end 129.54 64.77)
 		(stroke
 			(width 0.762)
@@ -4610,7 +4610,7 @@
 		(uuid "9d64fb57-5651-42ba-bae5-6c32ac578b77")
 	)
 	(rectangle
-		(start 133.35 104.775)
+		(start 133.35 104.14)
 		(end 180.34 152.4)
 		(stroke
 			(width 0.762)
@@ -4679,7 +4679,7 @@
 	)
 	(text "DRV5032DU"
 		(exclude_from_sim no)
-		(at 157.226 110.236 0)
+		(at 157.226 109.22 0)
 		(effects
 			(font
 				(face "Arial Black")
@@ -4701,7 +4701,7 @@
 	)
 	(text "SHT-C3\n"
 		(exclude_from_sim no)
-		(at 233.172 110.49 0)
+		(at 232.918 108.966 0)
 		(effects
 			(font
 				(face "Arial Black")
