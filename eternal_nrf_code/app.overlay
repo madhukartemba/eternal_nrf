@@ -1,0 +1,73 @@
+#include <zephyr/dt-bindings/gpio/gpio.h>
+#include <zephyr/dt-bindings/adc/adc.h>
+#include <zephyr/dt-bindings/adc/nrf-saadc.h>
+
+/ {
+	zephyr,user {
+		io-channels = <&adc 0>;
+	};
+};
+
+&pinctrl {
+	i2c0_default: i2c0_default {
+		group1 {
+			psels = <NRF_PSEL(TWIM_SCL, 0, 14)>,
+				<NRF_PSEL(TWIM_SDA, 0, 15)>;
+		};
+	};
+
+	i2c0_sleep: i2c0_sleep {
+		group1 {
+			psels = <NRF_PSEL(TWIM_SCL, 0, 14)>,
+				<NRF_PSEL(TWIM_SDA, 0, 15)>;
+			low-power-enable;
+		};
+	};
+};
+
+/* Free P0.09 / P0.10 from NFC1/NFC2 mode so they work as plain GPIOs and
+ * the NFC antenna-sense circuit isn't burning current in System ON LP.
+ * Writes UICR.NFCPINS = Disabled at boot via the HAL init sequence.
+ */
+&uicr {
+	nfct-pins-as-gpios;
+};
+
+&gpio0 {
+	sht_en_hog {
+		gpio-hog;
+		gpios = <16 GPIO_ACTIVE_HIGH>;
+		output-high;
+	};
+};
+
+&i2c0 {
+	compatible = "nordic,nrf-twim";
+	status = "okay";
+	pinctrl-0 = <&i2c0_default>;
+	pinctrl-1 = <&i2c0_sleep>;
+	pinctrl-names = "default", "sleep";
+	clock-frequency = <I2C_BITRATE_FAST>;
+
+	shtc3: shtc3@70 {
+		compatible = "sensirion,shtc3", "sensirion,shtcx";
+		reg = <0x70>;
+		measure-mode = "normal";
+		zephyr,deferred-init;
+	};
+};
+
+&adc {
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	channel@0 {
+		reg = <0>;
+		zephyr,gain = "ADC_GAIN_1_6";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,input-positive = <NRF_SAADC_VDD>;
+		zephyr,resolution = <12>;
+	};
+};
