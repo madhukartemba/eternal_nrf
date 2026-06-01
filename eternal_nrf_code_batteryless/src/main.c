@@ -40,14 +40,15 @@
  *   1. read the sensor + contact/button pins,
  *   2. fire a short advertising burst of ~3-4 events so a windowed scanner
  *      (Home Assistant) reliably catches at least one,
- *   3. light the LED solid and hold for IDLE_PERIOD as an "alive" beacon -
- *      it stays lit until the next burst or until the cap browns out,
+ *   3. flash the LED briefly as an "alive" heartbeat, then idle for the
+ *      rest of IDLE_PERIOD,
  *   4. loop and transmit again if the MCU is still powered.
  *
  * ~450 ms at the 100-150 ms NCONN_IDENTITY fast interval yields ~3-4
  * advertising events per burst.
  */
 #define ADV_BURST_MS        450U
+#define LED_FLASH_MS        30U
 #define IDLE_PERIOD         K_MSEC(3000)
 
 static struct {
@@ -168,12 +169,6 @@ static void publish_cycle(void)
 	int16_t  t = 0;
 	uint16_t h = 0;
 
-	/* LED off while we read and transmit; it comes on for the hold
-	 * phase below. Keeping it off during the burst leaves more headroom
-	 * for the radio.
-	 */
-	(void)gpio_pin_set(gpio0, LED0_PIN, 0);
-
 	if (read_shtc3_sample(&t, &h) == 0) {
 		svc.temp_centi_c  = sys_cpu_to_le16(t);
 		svc.hum_centi_pct = sys_cpu_to_le16(h);
@@ -202,11 +197,13 @@ static void publish_cycle(void)
 		printk("adv_start failed\n");
 	}
 
-	/* Light the LED solid and hold. It stays lit until the next burst or
-	 * until the storage cap can no longer power the MCU (brownout), at
-	 * which point the device resets and starts over once the cap recharges.
+	/* Brief LED heartbeat to show the burst went out, then idle for the
+	 * rest of the window. If the storage cap can no longer power the MCU
+	 * (brownout) the device just resets and starts over once it recharges.
 	 */
 	(void)gpio_pin_set(gpio0, LED0_PIN, 1);
+	k_sleep(K_MSEC(LED_FLASH_MS));
+	(void)gpio_pin_set(gpio0, LED0_PIN, 0);
 	k_sleep(IDLE_PERIOD);
 }
 
