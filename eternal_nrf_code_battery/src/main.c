@@ -37,7 +37,7 @@
 #define BUTTON_PIN          20U
 #define SHT_EN_PIN          16U
 
-#define SENSOR_PERIOD       K_MINUTES(10)
+#define SENSOR_PERIOD       K_MINUTES(5)
 /* ~1500 ms at the default 100-150 ms fast-adv interval -> ~10-15 adv events
  * per burst. Longer than strictly needed for an ideal scanner, but gives
  * Home Assistant / windowed BLE scanners enough redundancy to avoid the
@@ -276,7 +276,7 @@ static void adv_stop_handler(struct k_work *w)
 	(void)gpio_pin_set(gpio0, LED0_PIN, 0);
 
 	/* Tear down the BLE controller for the long idle window. The next
-	 * update_work will rebuild it via bt_setup(). At a 10-min cycle the
+	 * update_work will rebuild it via bt_setup(). At a 5-min cycle the
 	 * one-shot enable cost (~30 ms HFCLK + flash read) is heavily
 	 * dominated by the ~1-2 uA continuous saving while disabled.
 	 */
