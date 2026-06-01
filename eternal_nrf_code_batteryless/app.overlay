@@ -1,12 +1,4 @@
 #include <zephyr/dt-bindings/gpio/gpio.h>
-#include <zephyr/dt-bindings/adc/adc.h>
-#include <zephyr/dt-bindings/adc/nrf-saadc.h>
-
-/ {
-	zephyr,user {
-		io-channels = <&adc 0>;
-	};
-};
 
 &pinctrl {
 	i2c0_default: i2c0_default {
@@ -54,20 +46,5 @@
 		reg = <0x70>;
 		measure-mode = "normal";
 		zephyr,deferred-init;
-	};
-};
-
-&adc {
-	status = "okay";
-	#address-cells = <1>;
-	#size-cells = <0>;
-
-	channel@0 {
-		reg = <0>;
-		zephyr,gain = "ADC_GAIN_1_6";
-		zephyr,reference = "ADC_REF_INTERNAL";
-		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
-		zephyr,input-positive = <NRF_SAADC_VDD>;
-		zephyr,resolution = <12>;
 	};
 };

@@ -3,7 +3,6 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/sensor.h>
-#include <zephyr/drivers/adc.h>
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/settings/settings.h>
 #include <zephyr/sys/byteorder.h>
@@ -11,46 +10,49 @@
 /* BTHome v2 service-data format (https://bthome.io)
  *   uuid     : 0xFCD2 (BTHome SIG-assigned 16-bit UUID), little-endian
  *   info     : 0x40 = v2, unencrypted, not trigger-based
- *   0x01     : battery, uint8, % (derived from VDD: 2.20 V = 0%, 3.10 V = 100%)
  *   0x02     : temperature, int16 LE, 0.01 degC resolution
  *   0x03     : humidity, uint16 LE, 0.01 % resolution
  *   0x0F     : generic boolean, uint8 (button state)
  *   0x11     : opening, uint8 (magnet/contact state)
+ *
+ * No battery object: this is a batteryless harvester (solar + supercap via
+ * BQ25504). There is no meaningful "charge %" to report - the device simply
+ * runs whenever the storage cap holds enough energy and browns out when it
+ * doesn't. BTHome object IDs must stay in ascending order, which they are.
  */
 #define BTHOME_UUID         0xFCD2U
 #define BTHOME_INFO_V2      0x40U
-#define BTHOME_OID_BATTERY  0x01U
 #define BTHOME_OID_TEMP     0x02U
 #define BTHOME_OID_HUM      0x03U
 #define BTHOME_OID_BOOL     0x0FU
 #define BTHOME_OID_OPENING  0x11U
-
-/* Linear V->% mapping for the rail powering the nRF VDD pin. Placeholder
- * range; tune to the actual battery / supercap discharge curve once
- * characterised on hardware.
- */
-#define BATT_MV_MIN         2200U
-#define BATT_MV_MAX         3100U
 
 #define LED0_PIN            10U
 #define INPUT_PIN           12U
 #define BUTTON_PIN          20U
 #define SHT_EN_PIN          16U
 
-#define SENSOR_PERIOD       K_MINUTES(5)
-/* ~1500 ms at the default 100-150 ms fast-adv interval -> ~10-15 adv events
- * per burst. Longer than strictly needed for an ideal scanner, but gives
- * Home Assistant / windowed BLE scanners enough redundancy to avoid the
- * unavailability timeout when a burst is partially missed.
+/* Batteryless duty cycle.
+ *
+ * There is no deep-sleep schedule: in an energy-harvesting design you spend
+ * energy as soon as you have it, because you can't assume you'll still be
+ * powered in N minutes. Each pass through the main loop:
+ *   1. read the sensor + contact/button pins,
+ *   2. fire a short advertising burst of ~3-4 events so a windowed scanner
+ *      (Home Assistant) reliably catches at least one,
+ *   3. light the LED solid and hold for IDLE_PERIOD as an "alive" beacon -
+ *      it stays lit until the next burst or until the cap browns out,
+ *   4. loop and transmit again if the MCU is still powered.
+ *
+ * ~450 ms at the 100-150 ms NCONN_IDENTITY fast interval yields ~3-4
+ * advertising events per burst.
  */
-#define ADV_BURST_MS        1500U
-#define LED_FLASH_MS        30U
+#define ADV_BURST_MS        450U
+#define IDLE_PERIOD         K_MSEC(3000)
 
 static struct {
 	uint16_t uuid;
 	uint8_t  info;
-	uint8_t  oid_battery;
-	uint8_t  battery_pct;
 	uint8_t  oid_temp;
 	int16_t  temp_centi_c;
 	uint8_t  oid_hum;
@@ -62,7 +64,6 @@ static struct {
 } __packed svc = {
 	.uuid        = sys_cpu_to_le16(BTHOME_UUID),
 	.info        = BTHOME_INFO_V2,
-	.oid_battery = BTHOME_OID_BATTERY,
 	.oid_temp    = BTHOME_OID_TEMP,
 	.oid_hum     = BTHOME_OID_HUM,
 	.oid_button  = BTHOME_OID_BOOL,
@@ -78,15 +79,7 @@ static const struct bt_data ad[] = {
 
 static const struct device *const gpio0 = DEVICE_DT_GET(DT_NODELABEL(gpio0));
 static const struct device *const shtc3 = DEVICE_DT_GET(DT_NODELABEL(shtc3));
-static const struct adc_dt_spec adc_vdd =
-	ADC_DT_SPEC_GET(DT_PATH(zephyr_user));
 
-static struct gpio_callback input_cb;
-static struct gpio_callback button_cb;
-static struct k_work        update_work;
-static struct k_work_delayable adv_stop_work;
-static struct k_work_delayable sensor_work;
-static bool advertising;
 static bool bt_ready;
 
 /* Every GPIO we don't drive or sense.
@@ -124,15 +117,6 @@ static int bt_setup(void)
 	}
 	bt_ready = true;
 	return 0;
-}
-
-static void bt_teardown(void)
-{
-	if (!bt_ready) {
-		return;
-	}
-	(void)bt_disable();
-	bt_ready = false;
 }
 
 static int read_shtc3_sample(int16_t *temp_centi_c, uint16_t *hum_centi_pct)
@@ -174,61 +158,25 @@ static int read_shtc3_sample(int16_t *temp_centi_c, uint16_t *hum_centi_pct)
 	return 0;
 }
 
-static uint8_t voltage_to_battery_pct(uint16_t mv)
+/* One publish cycle: read sensors + pins, fire a short advertising burst,
+ * then hold the LED solid for the idle window. Returns after IDLE_PERIOD;
+ * if the cap browns out at any point the MCU simply resets and main()
+ * starts the cycle over from scratch.
+ */
+static void publish_cycle(void)
 {
-	if (mv <= BATT_MV_MIN) {
-		return 0U;
-	}
-	if (mv >= BATT_MV_MAX) {
-		return 100U;
-	}
-	return (uint8_t)(((uint32_t)(mv - BATT_MV_MIN) * 100U) /
-			(BATT_MV_MAX - BATT_MV_MIN));
-}
-
-static int read_vdd_millivolts(uint16_t *millivolts)
-{
-	int16_t raw = 0;
-	struct adc_sequence seq = {
-		.buffer      = &raw,
-		.buffer_size = sizeof(raw),
-	};
-
-	int err = adc_sequence_init_dt(&adc_vdd, &seq);
-	if (err) {
-		return err;
-	}
-	err = adc_read(adc_vdd.dev, &seq);
-	if (err) {
-		return err;
-	}
-
-	int32_t mv = raw;
-	err = adc_raw_to_millivolts_dt(&adc_vdd, &mv);
-	if (err) {
-		return err;
-	}
-	if (mv < 0) {
-		mv = 0;
-	}
-	*millivolts = (uint16_t)mv;
-	return 0;
-}
-
-static void update_work_handler(struct k_work *w)
-{
-	ARG_UNUSED(w);
-
 	int16_t  t = 0;
 	uint16_t h = 0;
-	uint16_t v = 0;
+
+	/* LED off while we read and transmit; it comes on for the hold
+	 * phase below. Keeping it off during the burst leaves more headroom
+	 * for the radio.
+	 */
+	(void)gpio_pin_set(gpio0, LED0_PIN, 0);
 
 	if (read_shtc3_sample(&t, &h) == 0) {
 		svc.temp_centi_c  = sys_cpu_to_le16(t);
 		svc.hum_centi_pct = sys_cpu_to_le16(h);
-	}
-	if (read_vdd_millivolts(&v) == 0) {
-		svc.battery_pct = voltage_to_battery_pct(v);
 	}
 
 	int magnet = gpio_pin_get(gpio0, INPUT_PIN);
@@ -237,104 +185,41 @@ static void update_work_handler(struct k_work *w)
 	svc.button_pressed = (button == 0) ? 1U : 0U;
 	svc.magnet_open    = (magnet  > 0) ? 1U : 0U;
 
-	printk("update: t=%d.%02d C  rh=%u.%02u %%  v=%u mV  batt=%u %%  mag=%s  btn=%s\n",
+	printk("publish: t=%d.%02d C  rh=%u.%02u %%  mag=%s  btn=%s\n",
 	       t / 100, (t < 0 ? -t : t) % 100,
 	       h / 100, h % 100,
-	       v, svc.battery_pct,
 	       svc.magnet_open ? "open" : "closed",
 	       svc.button_pressed ? "down" : "up");
 
-	if (advertising) {
-		(void)bt_le_adv_update_data(ad, ARRAY_SIZE(ad), NULL, 0);
-	} else {
-		if (bt_setup() != 0) {
-			return;
-		}
-		if (bt_le_adv_start(BT_LE_ADV_NCONN_IDENTITY, ad,
-				    ARRAY_SIZE(ad), NULL, 0)) {
-			printk("adv_start failed\n");
-			return;
-		}
-		advertising = true;
-	}
-
-	(void)k_work_reschedule(&adv_stop_work, K_MSEC(ADV_BURST_MS));
-}
-
-static void adv_stop_handler(struct k_work *w)
-{
-	ARG_UNUSED(w);
-	if (advertising) {
+	/* Burst: start fresh each cycle so the just-read data goes out, run
+	 * for ~3-4 advertising events, then stop the radio.
+	 */
+	if (bt_le_adv_start(BT_LE_ADV_NCONN_IDENTITY, ad,
+			    ARRAY_SIZE(ad), NULL, 0) == 0) {
+		k_sleep(K_MSEC(ADV_BURST_MS));
 		(void)bt_le_adv_stop();
-		advertising = false;
+	} else {
+		printk("adv_start failed\n");
 	}
-	/* Brief "going to sleep" blink. Runs on the system workqueue so
-	 * k_sleep() just yields the CPU to idle for the flash duration.
+
+	/* Light the LED solid and hold. It stays lit until the next burst or
+	 * until the storage cap can no longer power the MCU (brownout), at
+	 * which point the device resets and starts over once the cap recharges.
 	 */
 	(void)gpio_pin_set(gpio0, LED0_PIN, 1);
-	k_sleep(K_MSEC(LED_FLASH_MS));
-	(void)gpio_pin_set(gpio0, LED0_PIN, 0);
-
-	/* Tear down the BLE controller for the long idle window. The next
-	 * update_work will rebuild it via bt_setup(). At a 5-min cycle the
-	 * one-shot enable cost (~30 ms HFCLK + flash read) is heavily
-	 * dominated by the ~1-2 uA continuous saving while disabled.
-	 */
-	bt_teardown();
-}
-
-static void sensor_work_handler(struct k_work *w)
-{
-	ARG_UNUSED(w);
-	(void)k_work_submit(&update_work);
-	(void)k_work_reschedule(&sensor_work, SENSOR_PERIOD);
-}
-
-/* Re-arm SENSE on a pin to fire on its NEXT transition. We use level-mode
- * interrupts (which map to GPIOTE PORT/SENSE on the nRF gpio driver, LFCLK-
- * based, ~0 uA idle) rather than edge-mode interrupts (which allocate a
- * GPIOTE channel in IN-event mode and burn ~5-6 uA continuously in System
- * ON LP). After each detection the callback flips the sense polarity, so
- * functionally this behaves identically to GPIO_INT_EDGE_BOTH.
- */
-static void rearm_pin_sense(gpio_pin_t pin)
-{
-	int level = gpio_pin_get(gpio0, pin);
-	(void)gpio_pin_interrupt_configure(gpio0, pin,
-		level > 0 ? GPIO_INT_LEVEL_LOW : GPIO_INT_LEVEL_HIGH);
-}
-
-static void gpio_event_cb(const struct device *dev,
-			  struct gpio_callback *cb, uint32_t pins)
-{
-	ARG_UNUSED(dev);
-	ARG_UNUSED(cb);
-
-	if (pins & BIT(INPUT_PIN)) {
-		rearm_pin_sense(INPUT_PIN);
-	}
-	if (pins & BIT(BUTTON_PIN)) {
-		rearm_pin_sense(BUTTON_PIN);
-	}
-	(void)k_work_submit(&update_work);
+	k_sleep(IDLE_PERIOD);
 }
 
 int main(void)
 {
-	printk("nrf-sensor: boot\n");
+	printk("nrf-sensor (batteryless): boot\n");
 
 	if (!device_is_ready(gpio0)) {
 		printk("gpio0 not ready\n");
 		return -1;
 	}
-	if (!device_is_ready(adc_vdd.dev)) {
-		printk("adc not ready\n");
-		return -1;
-	}
 
-	/* LED: drive low (off) by default. Only pulsed briefly after each
-	 * BLE burst as a "going to sleep" indicator.
-	 */
+	/* LED: drive low (off) by default. Held solid during each idle window. */
 	if (gpio_pin_configure(gpio0, LED0_PIN, GPIO_OUTPUT_INACTIVE)) {
 		printk("led pin config failed\n");
 		return -1;
@@ -365,11 +250,6 @@ int main(void)
 	 */
 	(void)gpio_pin_set(gpio0, SHT_EN_PIN, 0);
 
-	if (adc_channel_setup_dt(&adc_vdd)) {
-		printk("adc channel setup failed\n");
-		return -1;
-	}
-
 	/* DRV5032 (push-pull variant) actively drives both rails; no internal
 	 * pull needed, and adding one would just burn current fighting the
 	 * driver whenever the output sits in the opposite state.
@@ -384,17 +264,6 @@ int main(void)
 		return -1;
 	}
 
-	gpio_init_callback(&input_cb,  gpio_event_cb, BIT(INPUT_PIN));
-	gpio_init_callback(&button_cb, gpio_event_cb, BIT(BUTTON_PIN));
-	gpio_add_callback(gpio0, &input_cb);
-	gpio_add_callback(gpio0, &button_cb);
-
-	/* Arm SENSE on the current pin state's opposite polarity. See
-	 * rearm_pin_sense() above for why we avoid GPIO_INT_EDGE_*.
-	 */
-	rearm_pin_sense(INPUT_PIN);
-	rearm_pin_sense(BUTTON_PIN);
-
 	/* Disconnect every pin we don't drive or sense. Reset state is
 	 * input-with-buffer-enabled, which can burn pad leakage if the pin
 	 * floats around mid-rail.
@@ -404,22 +273,23 @@ int main(void)
 					 GPIO_DISCONNECTED);
 	}
 
-	/* BLE controller is brought up on demand by update_work_handler ->
-	 * bt_setup(), and torn down by adv_stop_handler -> bt_teardown().
-	 * No need to call bt_enable() here.
+	/* Bring the BLE controller up once. With CONFIG_BT_SETTINGS the
+	 * identity (stable MAC) is loaded from flash so Home Assistant keeps
+	 * tracking the same device across the frequent power cycles a
+	 * harvester sees. We never tear it down: at a ~3 s cadence the
+	 * one-shot enable cost would dominate, and re-enabling on every cycle
+	 * means re-reading flash each time.
 	 */
+	if (bt_setup() != 0) {
+		return -1;
+	}
 
-	k_work_init(&update_work, update_work_handler);
-	k_work_init_delayable(&adv_stop_work,  adv_stop_handler);
-	k_work_init_delayable(&sensor_work,    sensor_work_handler);
-
-	/* First publish, then arm the periodic sensor timer. The CPU stays
-	 * in System ON low-power between events; wake sources are the
-	 * GPIOTE PORT/SENSE detect on INPUT_PIN + BUTTON_PIN and the RTC
-	 * tick driving the delayable workqueue.
+	/* Spend energy as it arrives: no sleep schedule, just publish, hold
+	 * the LED, and publish again for as long as the cap keeps us alive.
 	 */
-	(void)k_work_submit(&update_work);
-	(void)k_work_reschedule(&sensor_work, SENSOR_PERIOD);
+	while (1) {
+		publish_cycle();
+	}
 
 	return 0;
 }
