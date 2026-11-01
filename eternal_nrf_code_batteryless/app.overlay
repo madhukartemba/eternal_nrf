@@ -26,13 +26,15 @@
 };
 
 &gpio0 {
-	/* Keep the SHTC3 off from reset so the first advertising burst
-	 * isn't competing with the sensor rail on a thin supercap.
+	/* Hold SHT_EN high from reset so device_init() can talk to the
+	 * SHTC3 before the first advertising burst. The 100 uF storage
+	 * cap often only funds one packet per charge-up, so that packet
+	 * needs a real temp/humidity sample.
 	 */
 	sht_en_hog {
 		gpio-hog;
 		gpios = <16 GPIO_ACTIVE_HIGH>;
-		output-low;
+		output-high;
 	};
 };
 

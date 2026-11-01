@@ -37,8 +37,7 @@
  * There is no deep-sleep schedule: in an energy-harvesting design you spend
  * energy as soon as you have it, because you can't assume you'll still be
  * powered in N minutes. Each pass through the main loop:
- *   1. sample contact/button pins (and the SHTC3 every SHT_PERIOD_CYCLES,
- *      after a deferred first-boot init),
+ *   1. sample contact/button pins (and the SHTC3 every SHT_PERIOD_CYCLES),
  *   2. fire a short dense advertising burst so a windowed scanner
  *      (Home Assistant) reliably catches at least one packet,
  *   3. blink the LED briefly after the burst, then idle for IDLE_PERIOD,
@@ -49,9 +48,11 @@
  * is ~15-22 events per burst, vs ~3-4 at the default fast interval, without
  * stretching the radio-on window. TX is +4 dBm (see prj.conf).
  *
- * SHTC3 is gated off between samples and only fetched every ~10 bursts
- * (~35 s). Magnet/button still go out every burst; last temp/humidity is
- * reused in the BTHome payload.
+ * Storage is a small 100 uF cap, not a supercap: a boot often only
+ * completes one burst. Init the SHTC3 (and take a sample) before the
+ * radio so that packet has real temp/humidity, not zeros. After that
+ * the SHTC3 is gated off and only fetched every ~10 bursts (~35 s)
+ * while we stay powered; magnet/button still go out every burst.
  */
 #define ADV_BURST_MS        450U
 #define LED_FLASH_MS        20U
@@ -219,7 +220,7 @@ static void publish_cycle(void)
 		k_sleep(K_MSEC(ADV_BURST_MS));
 		(void)bt_le_adv_stop();
 		/* Brief heartbeat after the radio is off so it cannot steal
-		 * energy from the burst on a thin supercap.
+		 * energy from the burst on the 100 uF cap.
 		 */
 		(void)gpio_pin_set(gpio0, LED0_PIN, 1);
 		k_sleep(K_MSEC(LED_FLASH_MS));
@@ -232,8 +233,8 @@ static void publish_cycle(void)
 }
 
 /* Power the SHTC3, run deferred driver init (wake + ID check), then gate
- * it off again. Called only after the first advertising burst so a thin
- * supercap spends its first energy on the radio, not I2C.
+ * it off again. Called before the first advertising burst so a one-shot
+ * 100 uF boot still puts a real sample in that packet.
  */
 static int shtc3_setup(void)
 {
@@ -269,19 +270,9 @@ int main(void)
 		return -1;
 	}
 
-	/* Hold the LED off before anything else. A blink on a thin supercap
-	 * can brown the rail out before the radio gets a packet out.
-	 */
+	/* Hold the LED off until after a successful burst. */
 	if (gpio_pin_configure(gpio0, LED0_PIN, GPIO_OUTPUT_INACTIVE)) {
 		printk("led pin config failed\n");
-		return -1;
-	}
-
-	/* Own SHT_EN and keep it low until after the first burst. The DT
-	 * hog already starts it low at reset.
-	 */
-	if (gpio_pin_configure(gpio0, SHT_EN_PIN, GPIO_OUTPUT_INACTIVE)) {
-		printk("sht_en config failed\n");
 		return -1;
 	}
 
@@ -308,6 +299,15 @@ int main(void)
 					 GPIO_DISCONNECTED);
 	}
 
+	/* SHTC3 first: on 100 uF a boot often only yields one packet, so
+	 * that packet must already contain a sample. The DT hog holds
+	 * SHT_EN high through kernel boot; this takes the pin and runs
+	 * the deferred driver init, then gates the sensor off.
+	 */
+	if (shtc3_setup() != 0) {
+		return -1;
+	}
+
 	/* Bring the BLE controller up once. With CONFIG_BT_SETTINGS the
 	 * identity (stable MAC) is loaded from flash so Home Assistant keeps
 	 * tracking the same device across the frequent power cycles a
@@ -318,12 +318,6 @@ int main(void)
 	if (bt_setup() != 0) {
 		return -1;
 	}
-
-	/* First energy goes to a radio burst (pins only, no SHTC3). Then
-	 * bring the sensor up if the cap is still holding.
-	 */
-	publish_cycle();
-	(void)shtc3_setup();
 
 	/* Spend energy as it arrives: no sleep schedule, just publish and
 	 * idle for as long as the cap keeps us alive.
