@@ -26,10 +26,13 @@
 };
 
 &gpio0 {
+	/* Keep the SHTC3 off from reset so the first advertising burst
+	 * isn't competing with the sensor rail on a thin supercap.
+	 */
 	sht_en_hog {
 		gpio-hog;
 		gpios = <16 GPIO_ACTIVE_HIGH>;
-		output-high;
+		output-low;
 	};
 };
 

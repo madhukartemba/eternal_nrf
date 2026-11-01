@@ -37,21 +37,26 @@
  * There is no deep-sleep schedule: in an energy-harvesting design you spend
  * energy as soon as you have it, because you can't assume you'll still be
  * powered in N minutes. Each pass through the main loop:
- *   1. read the sensor + contact/button pins,
+ *   1. sample contact/button pins (and the SHTC3 every SHT_PERIOD_CYCLES,
+ *      after a deferred first-boot init),
  *   2. fire a short dense advertising burst so a windowed scanner
  *      (Home Assistant) reliably catches at least one packet,
- *   3. flash the LED briefly as an "alive" heartbeat, then idle for the
- *      rest of IDLE_PERIOD,
+ *   3. blink the LED briefly after the burst, then idle for IDLE_PERIOD,
  *   4. loop and transmit again if the MCU is still powered.
  *
  * Interval matches nrf_doorbell: 20-30 ms (0x0020/0x0030 in 0.625 ms units)
  * instead of BT_LE_ADV_NCONN_IDENTITY's 100-150 ms. ~450 ms at that cadence
  * is ~15-22 events per burst, vs ~3-4 at the default fast interval, without
  * stretching the radio-on window. TX is +4 dBm (see prj.conf).
+ *
+ * SHTC3 is gated off between samples and only fetched every ~10 bursts
+ * (~35 s). Magnet/button still go out every burst; last temp/humidity is
+ * reused in the BTHome payload.
  */
 #define ADV_BURST_MS        450U
-#define LED_FLASH_MS        30U
+#define LED_FLASH_MS        20U
 #define IDLE_PERIOD         K_MSEC(3000)
+#define SHT_PERIOD_CYCLES   10U
 
 /* BLE advertising interval units are 0.625 ms; 0x0020=20 ms, 0x0030=30 ms. */
 static const struct bt_le_adv_param adv_param = {
@@ -95,6 +100,8 @@ static const struct device *const gpio0 = DEVICE_DT_GET(DT_NODELABEL(gpio0));
 static const struct device *const shtc3 = DEVICE_DT_GET(DT_NODELABEL(shtc3));
 
 static bool bt_ready;
+static bool sht_ready;
+static uint8_t sht_cycles_until_read;
 
 /* Every GPIO we don't drive or sense.
  *
@@ -172,19 +179,24 @@ static int read_shtc3_sample(int16_t *temp_centi_c, uint16_t *hum_centi_pct)
 	return 0;
 }
 
-/* One publish cycle: read sensors + pins, fire a short advertising burst,
- * then hold the LED solid for the idle window. Returns after IDLE_PERIOD;
- * if the cap browns out at any point the MCU simply resets and main()
- * starts the cycle over from scratch.
+/* One publish cycle: refresh pins (and periodically the SHTC3), fire a short
+ * advertising burst, then idle. Returns after IDLE_PERIOD; if the cap
+ * browns out at any point the MCU simply resets and main() starts over.
  */
 static void publish_cycle(void)
 {
-	int16_t  t = 0;
-	uint16_t h = 0;
+	int16_t  t = (int16_t)sys_le16_to_cpu(svc.temp_centi_c);
+	uint16_t h = sys_le16_to_cpu(svc.hum_centi_pct);
 
-	if (read_shtc3_sample(&t, &h) == 0) {
-		svc.temp_centi_c  = sys_cpu_to_le16(t);
-		svc.hum_centi_pct = sys_cpu_to_le16(h);
+	if (sht_ready) {
+		if (sht_cycles_until_read == 0U) {
+			if (read_shtc3_sample(&t, &h) == 0) {
+				svc.temp_centi_c  = sys_cpu_to_le16(t);
+				svc.hum_centi_pct = sys_cpu_to_le16(h);
+			}
+			sht_cycles_until_read = SHT_PERIOD_CYCLES;
+		}
+		sht_cycles_until_read--;
 	}
 
 	int magnet = gpio_pin_get(gpio0, INPUT_PIN);
@@ -206,18 +218,46 @@ static void publish_cycle(void)
 			    ARRAY_SIZE(ad), NULL, 0) == 0) {
 		k_sleep(K_MSEC(ADV_BURST_MS));
 		(void)bt_le_adv_stop();
+		/* Brief heartbeat after the radio is off so it cannot steal
+		 * energy from the burst on a thin supercap.
+		 */
+		(void)gpio_pin_set(gpio0, LED0_PIN, 1);
+		k_sleep(K_MSEC(LED_FLASH_MS));
+		(void)gpio_pin_set(gpio0, LED0_PIN, 0);
 	} else {
 		printk("adv_start failed\n");
 	}
 
-	/* Brief LED heartbeat to show the burst went out, then idle for the
-	 * rest of the window. If the storage cap can no longer power the MCU
-	 * (brownout) the device just resets and starts over once it recharges.
-	 */
-	(void)gpio_pin_set(gpio0, LED0_PIN, 1);
-	k_sleep(K_MSEC(LED_FLASH_MS));
-	(void)gpio_pin_set(gpio0, LED0_PIN, 0);
 	k_sleep(IDLE_PERIOD);
+}
+
+/* Power the SHTC3, run deferred driver init (wake + ID check), then gate
+ * it off again. Called only after the first advertising burst so a thin
+ * supercap spends its first energy on the radio, not I2C.
+ */
+static int shtc3_setup(void)
+{
+	if (gpio_pin_configure(gpio0, SHT_EN_PIN, GPIO_OUTPUT_ACTIVE)) {
+		printk("sht_en config failed\n");
+		return -1;
+	}
+	k_sleep(K_MSEC(20));
+
+	if (device_init(shtc3)) {
+		printk("shtc3 init failed\n");
+		(void)gpio_pin_set(gpio0, SHT_EN_PIN, 0);
+		return -1;
+	}
+	if (!device_is_ready(shtc3)) {
+		printk("shtc3 not ready\n");
+		(void)gpio_pin_set(gpio0, SHT_EN_PIN, 0);
+		return -1;
+	}
+
+	(void)gpio_pin_set(gpio0, SHT_EN_PIN, 0);
+	sht_ready = true;
+	sht_cycles_until_read = 0U;
+	return 0;
 }
 
 int main(void)
@@ -229,36 +269,21 @@ int main(void)
 		return -1;
 	}
 
-	/* LED: drive low (off) by default. Held solid during each idle window. */
+	/* Hold the LED off before anything else. A blink on a thin supercap
+	 * can brown the rail out before the radio gets a packet out.
+	 */
 	if (gpio_pin_configure(gpio0, LED0_PIN, GPIO_OUTPUT_INACTIVE)) {
 		printk("led pin config failed\n");
 		return -1;
 	}
 
-	/* Power up the SHTC3 long enough to run device_init() (the driver
-	 * does a wake + ID-check + sleep over I2C). The DT gpio-hog already
-	 * holds SHT_EN high at boot; this re-asserts it explicitly so we
-	 * own the pin from here on.
+	/* Own SHT_EN and keep it low until after the first burst. The DT
+	 * hog already starts it low at reset.
 	 */
-	if (gpio_pin_configure(gpio0, SHT_EN_PIN, GPIO_OUTPUT_ACTIVE)) {
+	if (gpio_pin_configure(gpio0, SHT_EN_PIN, GPIO_OUTPUT_INACTIVE)) {
 		printk("sht_en config failed\n");
 		return -1;
 	}
-	k_sleep(K_MSEC(20));
-
-	if (device_init(shtc3)) {
-		printk("shtc3 init failed\n");
-		return -1;
-	}
-	if (!device_is_ready(shtc3)) {
-		printk("shtc3 not ready\n");
-		return -1;
-	}
-
-	/* Init complete; gate the sensor power off. read_shtc3_sample()
-	 * re-asserts SHT_EN around each measurement.
-	 */
-	(void)gpio_pin_set(gpio0, SHT_EN_PIN, 0);
 
 	/* DRV5032 (push-pull variant) actively drives both rails; no internal
 	 * pull needed, and adding one would just burn current fighting the
@@ -294,8 +319,14 @@ int main(void)
 		return -1;
 	}
 
-	/* Spend energy as it arrives: no sleep schedule, just publish, hold
-	 * the LED, and publish again for as long as the cap keeps us alive.
+	/* First energy goes to a radio burst (pins only, no SHTC3). Then
+	 * bring the sensor up if the cap is still holding.
+	 */
+	publish_cycle();
+	(void)shtc3_setup();
+
+	/* Spend energy as it arrives: no sleep schedule, just publish and
+	 * idle for as long as the cap keeps us alive.
 	 */
 	while (1) {
 		publish_cycle();
