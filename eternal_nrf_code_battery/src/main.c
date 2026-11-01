@@ -38,13 +38,24 @@
 #define SHT_EN_PIN          16U
 
 #define SENSOR_PERIOD       K_MINUTES(5)
-/* ~1500 ms at the default 100-150 ms fast-adv interval -> ~10-15 adv events
- * per burst. Longer than strictly needed for an ideal scanner, but gives
- * Home Assistant / windowed BLE scanners enough redundancy to avoid the
- * unavailability timeout when a burst is partially missed.
+/* Interval matches nrf_doorbell: 20-30 ms (0x0020/0x0030 in 0.625 ms units)
+ * instead of BT_LE_ADV_NCONN_IDENTITY's 100-150 ms. ~1500 ms at that cadence
+ * is ~50-75 events per burst, vs ~10-15 at the default fast interval, without
+ * stretching the radio-on window. TX is +4 dBm (see prj.conf).
  */
 #define ADV_BURST_MS        1500U
 #define LED_FLASH_MS        30U
+
+/* BLE advertising interval units are 0.625 ms; 0x0020=20 ms, 0x0030=30 ms. */
+static const struct bt_le_adv_param adv_param = {
+	.id = BT_ID_DEFAULT,
+	.sid = 0,
+	.secondary_max_skip = 0,
+	.options = BT_LE_ADV_OPT_USE_IDENTITY,
+	.interval_min = 0x0020,
+	.interval_max = 0x0030,
+	.peer = NULL,
+};
 
 static struct {
 	uint16_t uuid;
@@ -250,7 +261,7 @@ static void update_work_handler(struct k_work *w)
 		if (bt_setup() != 0) {
 			return;
 		}
-		if (bt_le_adv_start(BT_LE_ADV_NCONN_IDENTITY, ad,
+		if (bt_le_adv_start(&adv_param, ad,
 				    ARRAY_SIZE(ad), NULL, 0)) {
 			printk("adv_start failed\n");
 			return;

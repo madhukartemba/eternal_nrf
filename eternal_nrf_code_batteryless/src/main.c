@@ -38,18 +38,31 @@
  * energy as soon as you have it, because you can't assume you'll still be
  * powered in N minutes. Each pass through the main loop:
  *   1. read the sensor + contact/button pins,
- *   2. fire a short advertising burst of ~3-4 events so a windowed scanner
- *      (Home Assistant) reliably catches at least one,
+ *   2. fire a short dense advertising burst so a windowed scanner
+ *      (Home Assistant) reliably catches at least one packet,
  *   3. flash the LED briefly as an "alive" heartbeat, then idle for the
  *      rest of IDLE_PERIOD,
  *   4. loop and transmit again if the MCU is still powered.
  *
- * ~450 ms at the 100-150 ms NCONN_IDENTITY fast interval yields ~3-4
- * advertising events per burst.
+ * Interval matches nrf_doorbell: 20-30 ms (0x0020/0x0030 in 0.625 ms units)
+ * instead of BT_LE_ADV_NCONN_IDENTITY's 100-150 ms. ~450 ms at that cadence
+ * is ~15-22 events per burst, vs ~3-4 at the default fast interval, without
+ * stretching the radio-on window. TX is +4 dBm (see prj.conf).
  */
 #define ADV_BURST_MS        450U
 #define LED_FLASH_MS        30U
 #define IDLE_PERIOD         K_MSEC(3000)
+
+/* BLE advertising interval units are 0.625 ms; 0x0020=20 ms, 0x0030=30 ms. */
+static const struct bt_le_adv_param adv_param = {
+	.id = BT_ID_DEFAULT,
+	.sid = 0,
+	.secondary_max_skip = 0,
+	.options = BT_LE_ADV_OPT_USE_IDENTITY,
+	.interval_min = 0x0020,
+	.interval_max = 0x0030,
+	.peer = NULL,
+};
 
 static struct {
 	uint16_t uuid;
@@ -187,9 +200,9 @@ static void publish_cycle(void)
 	       svc.button_pressed ? "down" : "up");
 
 	/* Burst: start fresh each cycle so the just-read data goes out, run
-	 * for ~3-4 advertising events, then stop the radio.
+	 * a dense 20-30 ms interval for ADV_BURST_MS, then stop the radio.
 	 */
-	if (bt_le_adv_start(BT_LE_ADV_NCONN_IDENTITY, ad,
+	if (bt_le_adv_start(&adv_param, ad,
 			    ARRAY_SIZE(ad), NULL, 0) == 0) {
 		k_sleep(K_MSEC(ADV_BURST_MS));
 		(void)bt_le_adv_stop();
