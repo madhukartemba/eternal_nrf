@@ -57,6 +57,17 @@ struct curve_pt {
 	uint8_t  pct;
 };
 
+#if defined(ETERNAL_CELL_CR2032)
+/* CR2032 primary cell (e.g. the main-door unit). Build with
+ *   west build -d build_cr2032 -- -DEXTRA_CFLAGS=-DETERNAL_CELL_CR2032
+ * Long flat plateau ~2.9-3.0 V at uA loads, knee below ~2.7 V. No charging
+ * object is sent: the cell can't charge.
+ */
+static const struct curve_pt batt_curve[] = {
+	{3000, 100}, {2900, 80}, {2800, 60}, {2700, 40},
+	{2600, 25},  {2500, 15}, {2400, 8},  {2200, 0},
+};
+#else
 /* ML621 (Mn-Li, charged to ~3.1 V by the BQ25504 VBAT_OV setting): drops
  * quickly off full charge, then slopes steadily through 2.9-2.5 V.
  */
@@ -64,7 +75,10 @@ static const struct curve_pt batt_curve[] = {
 	{3100, 100}, {3000, 95}, {2900, 85}, {2800, 70}, {2700, 50},
 	{2600, 32},  {2500, 18}, {2400, 9},  {2300, 4},  {2200, 0},
 };
+#define ETERNAL_TRACK_CHARGING 1
+#endif
 
+#if defined(ETERNAL_TRACK_CHARGING)
 /* Charging = smoothed resting VDD rising over the last CHG_WINDOW
  * heartbeats (40 min at a 10-min period). Thresholds in mV; hysteresis
  * stops it flapping on ADC noise (~0.9 mV/LSB at gain 1/6).
@@ -72,6 +86,7 @@ static const struct curve_pt batt_curve[] = {
 #define CHG_WINDOW          4U
 #define CHG_ON_MV           6
 #define CHG_OFF_MV          0
+#endif
 
 #define LED0_PIN            10U
 #define INPUT_PIN           12U
@@ -121,8 +136,10 @@ static struct {
 	uint16_t hum_centi_pct;
 	uint8_t  oid_magnet;
 	uint8_t  magnet_open;
+#if defined(ETERNAL_TRACK_CHARGING)
 	uint8_t  oid_charging;
 	uint8_t  charging;
+#endif
 	uint8_t  oid_button;
 	uint8_t  button_event;
 } __packed svc = {
@@ -133,7 +150,9 @@ static struct {
 	.oid_temp     = BTHOME_OID_TEMP,
 	.oid_hum      = BTHOME_OID_HUM,
 	.oid_magnet   = BTHOME_OID_OPENING,
+#if defined(ETERNAL_TRACK_CHARGING)
 	.oid_charging = BTHOME_OID_CHARGING,
+#endif
 	.oid_button   = BTHOME_OID_BUTTON,
 };
 
@@ -174,10 +193,12 @@ static bool    btn_down;        /* debounced state */
 static uint8_t btn_clicks;
 static bool    btn_long_fired;
 
+#if defined(ETERNAL_TRACK_CHARGING)
 static int32_t chg_ema_mv16;    /* EMA of resting VDD, mV * 16 */
 static int32_t chg_hist[CHG_WINDOW];
 static uint8_t chg_count;
 static uint8_t chg_idx;
+#endif
 
 /* Every GPIO we don't drive or sense.
  *
@@ -284,6 +305,7 @@ static uint8_t voltage_to_battery_pct(uint16_t mv)
 	return batt_curve[n - 1].pct;
 }
 
+#if defined(ETERNAL_TRACK_CHARGING)
 /* Feed one resting VDD sample per heartbeat; returns the charging flag. */
 static uint8_t charge_track(uint16_t mv)
 {
@@ -314,6 +336,7 @@ static uint8_t charge_track(uint16_t mv)
 	}
 	return svc.charging;	/* hysteresis band: hold */
 }
+#endif
 
 static int read_vdd_millivolts(uint16_t *millivolts)
 {
@@ -362,9 +385,11 @@ static void update_work_handler(struct k_work *w)
 	/* Only trust VDD while the radio is idle; mid-burst readings sag. */
 	if (!advertising && read_vdd_millivolts(&v) == 0) {
 		svc.battery_pct = voltage_to_battery_pct(v);
+#if defined(ETERNAL_TRACK_CHARGING)
 		if (!is_event) {
 			svc.charging = charge_track(v);
 		}
+#endif
 	}
 
 	int magnet = gpio_pin_get(gpio0, INPUT_PIN);
