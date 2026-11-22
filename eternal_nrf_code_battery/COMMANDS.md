@@ -20,7 +20,7 @@ export ZEPHYR_TOOLCHAIN_VARIANT=zephyr
 Incremental:
 
 ```bash
-cd ~/Desktop/eternal_nrf/eternal_nrf_code
+cd ~/Desktop/eternal_nrf/eternal_nrf_code_battery
 west build -b nrf52dk/nrf52810
 ```
 
@@ -30,23 +30,53 @@ Pristine (use after editing `prj.conf` / changing board):
 west build -b nrf52dk/nrf52810 -p always
 ```
 
-Output hex: `build/merged.hex`.
+Output hex: `build/merged.hex` (ML621 cell curve + charging flag).
+
+CR2032 build (coin-cell discharge curve, no charging flag) — used on the
+main door board:
+
+```bash
+west build -b nrf52dk/nrf52810 -p always -d build_cr2032 -- -DEXTRA_CFLAGS=-DETERNAL_CELL_CR2032
+```
+
+Output hex: `build_cr2032/merged.hex`.
 
 ## Flash (OpenOCD + CMSIS-DAP)
 
+One command: prints the device address, flashes, verifies, resets, and
+clears the debug power-up latch so the board drops straight back to
+sleep current (no power-cycle needed):
+
 ```bash
-cd ~/Desktop/eternal_nrf/eternal_nrf_code
+cd ~/Desktop/eternal_nrf/eternal_nrf_code_battery
 openocd \
   -f interface/cmsis-dap.cfg \
   -f target/nrf52.cfg \
-  -c "program build/merged.hex verify reset exit"
+  -c "adapter speed 1000" \
+  -c "init" \
+  -c "mdw 0x100000A4 2" \
+  -c "program build/merged.hex verify" \
+  -c "reset run" \
+  -c "nrf52.dap dpreg 4 0x00000000" \
+  -c "echo [nrf52.dap dpreg 4]" \
+  -c "exit"
 ```
 
-**After every flash, power-cycle the board** (briefly disconnect VBAT /
-battery / USB power) before measuring sleep current or deploying. The
-SWD programming session leaves the nRF52 in "debug-active" mode with the
-CPU clocked continuously (~1 mA draw) until POR clears the latched
-`DBGPWRUPREQ` bit. Removing the probe alone is not enough.
+- `adapter speed` must come **after** the target cfg, or it is overridden.
+- **Device address**: `mdw 0x100000A4 2` prints two words `LO HI`. The BLE
+  address is `(HI & 0xFFFF) | 0xC000` followed by `LO`, e.g.
+  `dd049db8 cdda0b8a` → `CB:8A:DD:04:9D:B8`. Home Assistant names the
+  entities after the last 4 hex digits (`eternal_9db8_*`).
+- **Debug latch**: the last two commands write 0 to DP CTRL/STAT and read
+  it back. `0x00000040` means CDBGPWRUPREQ/CSYSPWRUPREQ are cleared and
+  the chip leaves debug-active mode (~1 mA) once the probe disconnects.
+  If it still reads `0xf00000..`, power-cycle the board instead.
+- **Erase failures** (`Error erasing sector N`, `Failed to read memory at
+  0x4001e404`): usually a weak cell sagging during the erase. Retry at
+  `adapter speed 100`; if it still fails, power the board from a bench
+  supply on VCC (J1 pin 7) with JP1 open. A failed erase leaves the chip
+  blank (`pc: 0xfffffffe`) until a flash completes.
+- `clearing lockup after double fault` on a blank chip is expected.
 
 ## View RTT logs
 
@@ -66,7 +96,7 @@ CPU clocked continuously (~1 mA draw) until POR clears the latched
 
 ```bash
 brew install probe-rs-tools   # one-time
-probe-rs attach --chip nRF52810_xxAA build/eternal_nrf_code/zephyr/zephyr.elf
+probe-rs attach --chip nRF52810_xxAA build/eternal_nrf_code_battery/zephyr/zephyr.elf
 ```
 
 Add `--reset` to restart the target on attach. `Ctrl-C` to detach.
@@ -136,8 +166,8 @@ openocd -f interface/cmsis-dap.cfg -f target/nrf52.cfg \
   own the SWD bus at a time. `pkill openocd` before running probe-rs,
   and vice versa.
 - **Board draws ~1 mA after flashing**: chip is in debug-active mode.
-  Power-cycle the board (disconnect VBAT briefly). See the note under
-  "Flash" above.
+  Clear the latch over SWD (`nrf52.dap dpreg 4 0x00000000`, see "Flash"
+  above) or power-cycle the board.
 - **OpenOCD `CMSIS-DAP command CMD_CONNECT failed` / pipe errors**:
   USB-side issue. Replug the probe, try a different USB cable, ensure
   the target rail is actually powered.
