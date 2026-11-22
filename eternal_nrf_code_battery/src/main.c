@@ -7,6 +7,7 @@
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/settings/settings.h>
 #include <zephyr/sys/byteorder.h>
+#include <zephyr/sys/atomic.h>
 
 /* BTHome v2 service-data format (https://bthome.io)
  *   uuid     : 0xFCD2 (BTHome SIG-assigned 16-bit UUID), little-endian
@@ -37,13 +38,23 @@
 #define BUTTON_PIN          20U
 #define SHT_EN_PIN          16U
 
-#define SENSOR_PERIOD       K_MINUTES(5)
-/* Interval matches nrf_doorbell: 20-30 ms (0x0020/0x0030 in 0.625 ms units)
- * instead of BT_LE_ADV_NCONN_IDENTITY's 100-150 ms. ~1500 ms at that cadence
- * is ~50-75 events per burst, vs ~10-15 at the default fast interval, without
- * stretching the radio-on window. TX is +4 dBm (see prj.conf).
+/* Periodic heartbeat (temp/humidity/battery). Kept under Home Assistant's
+ * 15-min BLE stale-advertisement fallback so one missed burst doesn't mark
+ * the device unavailable. Was 5 min; the periodic bursts dominated the
+ * energy budget on low-light (back door) units.
  */
-#define ADV_BURST_MS        1500U
+#define SENSOR_PERIOD       K_MINUTES(10)
+/* Interval matches nrf_doorbell: 20-30 ms (0x0020/0x0030 in 0.625 ms units)
+ * instead of BT_LE_ADV_NCONN_IDENTITY's 100-150 ms. TX is +4 dBm (see
+ * prj.conf).
+ *
+ * Door/button events get the long burst (~50-75 events) because a missed
+ * open/close matters. Periodic heartbeats get a short burst (~10-15 events):
+ * a lost one is simply replaced by the next. Together with the 10-min period
+ * this cuts periodic radio-on time ~10x (288 x 1.5 s -> 144 x 0.3 s per day).
+ */
+#define ADV_BURST_EVENT_MS     1500U
+#define ADV_BURST_PERIODIC_MS  300U
 #define LED_FLASH_MS        30U
 
 /* BLE advertising interval units are 0.625 ms; 0x0020=20 ms, 0x0030=30 ms. */
@@ -99,6 +110,12 @@ static struct k_work_delayable adv_stop_work;
 static struct k_work_delayable sensor_work;
 static bool advertising;
 static bool bt_ready;
+/* Set by GPIO ISR / boot to request the long event burst; consumed by
+ * update_work_handler. Periodic updates leave it clear.
+ */
+static atomic_t event_pending;
+/* Uptime (ms) at which the current advertising burst is due to stop. */
+static int64_t adv_end_ms;
 
 /* Every GPIO we don't drive or sense.
  *
@@ -255,8 +272,18 @@ static void update_work_handler(struct k_work *w)
 	       svc.magnet_open ? "open" : "closed",
 	       svc.button_pressed ? "down" : "up");
 
+	uint32_t burst_ms = atomic_clear(&event_pending) ?
+			    ADV_BURST_EVENT_MS : ADV_BURST_PERIODIC_MS;
+	int64_t  end_ms   = k_uptime_get() + burst_ms;
+
 	if (advertising) {
 		(void)bt_le_adv_update_data(ad, ARRAY_SIZE(ad), NULL, 0);
+		/* Never shorten a burst already in flight (e.g. a heartbeat
+		 * landing inside a door-event burst); only extend it.
+		 */
+		if (end_ms <= adv_end_ms) {
+			return;
+		}
 	} else {
 		if (bt_setup() != 0) {
 			return;
@@ -269,7 +296,8 @@ static void update_work_handler(struct k_work *w)
 		advertising = true;
 	}
 
-	(void)k_work_reschedule(&adv_stop_work, K_MSEC(ADV_BURST_MS));
+	adv_end_ms = end_ms;
+	(void)k_work_reschedule(&adv_stop_work, K_MSEC(burst_ms));
 }
 
 static void adv_stop_handler(struct k_work *w)
@@ -287,7 +315,7 @@ static void adv_stop_handler(struct k_work *w)
 	(void)gpio_pin_set(gpio0, LED0_PIN, 0);
 
 	/* Tear down the BLE controller for the long idle window. The next
-	 * update_work will rebuild it via bt_setup(). At a 5-min cycle the
+	 * update_work will rebuild it via bt_setup(). At a 10-min cycle the
 	 * one-shot enable cost (~30 ms HFCLK + flash read) is heavily
 	 * dominated by the ~1-2 uA continuous saving while disabled.
 	 */
@@ -327,6 +355,7 @@ static void gpio_event_cb(const struct device *dev,
 	if (pins & BIT(BUTTON_PIN)) {
 		rearm_pin_sense(BUTTON_PIN);
 	}
+	atomic_set(&event_pending, 1);
 	(void)k_work_submit(&update_work);
 }
 
@@ -429,6 +458,7 @@ int main(void)
 	 * GPIOTE PORT/SENSE detect on INPUT_PIN + BUTTON_PIN and the RTC
 	 * tick driving the delayable workqueue.
 	 */
+	atomic_set(&event_pending, 1);	/* boot publish: use the long burst */
 	(void)k_work_submit(&update_work);
 	(void)k_work_reschedule(&sensor_work, SENSOR_PERIOD);
 
